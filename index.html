@@ -1,105 +1,92 @@
 <!doctype html>
 <html lang="it">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#123b5d">
-  <title>Wi-Fi di casa</title>
-  <style>
-    :root { color-scheme: light; }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0; min-height: 100vh; padding: 28px 16px;
-      display: grid; place-items: center;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #eef3f7; color: #17212b;
-    }
-    main {
-      width: min(100%, 430px); background: white; border-radius: 24px;
-      padding: 28px 22px; text-align: center;
-      box-shadow: 0 12px 36px rgba(20, 48, 70, .12);
-    }
-    .icon { font-size: 42px; margin-bottom: 8px; }
-    h1 { font-size: 25px; margin: 4px 0 8px; }
-    .ssid { font-size: 18px; font-weight: 700; overflow-wrap: anywhere; margin: 14px 0 22px; }
-    button {
-      width: 100%; border: 0; border-radius: 13px; padding: 15px 18px;
-      font-size: 16px; font-weight: 700; cursor: pointer; margin: 7px 0;
-    }
-    .primary { background: #145b8c; color: white; }
-    .secondary { background: #e7eff5; color: #173e59; }
-    #details { display: none; margin-top: 20px; }
-    #password { font-family: ui-monospace, monospace; overflow-wrap: anywhere; padding: 12px; background: #f3f6f8; border-radius: 10px; }
-    #qrcode { display: flex; justify-content: center; margin: 18px auto 10px; }
-    #qrcode img, #qrcode canvas { max-width: 100%; height: auto; }
-    .hint { color: #536575; font-size: 14px; line-height: 1.5; margin-top: 18px; }
-    .warning { color: #805000; background: #fff5df; padding: 12px; border-radius: 10px; font-size: 13px; line-height: 1.45; margin-top: 18px; }
-  </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wi-Fi di casa</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;padding:24px 14px;background:#edf3f7;font-family:Arial,sans-serif;color:#142536}
+  main{max-width:540px;margin:0 auto;background:#fff;border-radius:24px;padding:28px 24px;text-align:center;box-shadow:0 8px 30px #18334a18}
+  .icon{font-size:42px;margin:8px 0 16px}
+  h1{font-size:28px;margin:0 0 12px}
+  p{line-height:1.5}
+  .ssid{font-size:22px;font-weight:700;margin:22px 0}
+  button{width:100%;border:0;border-radius:16px;padding:17px 12px;margin:8px 0;font-size:17px;font-weight:700;cursor:pointer}
+  #qrbtn{background:#17618f;color:white}
+  #pwbtn{background:#e8f0f5;color:#123c58}
+  #qr{display:none;margin:20px auto;padding:14px;width:max-content;background:#fff;border:1px solid #dce5eb;border-radius:12px}
+  #password{display:none;overflow-wrap:anywhere;font-weight:700;background:#f2f6f8;padding:14px;border-radius:12px}
+  .hint{font-size:14px;color:#526779}
+  .warning{background:#fff4dd;color:#805000;padding:14px;border-radius:14px;font-size:14px;margin-top:20px}
+  .error{background:#fff0f0;color:#9b2424;padding:14px;border-radius:12px}
+</style>
 </head>
 <body>
 <main>
-  <div class="icon" aria-hidden="true">📶</div>
+  <div class="icon">📶</div>
   <h1>Benvenuto!</h1>
   <p>Collegati alla rete Wi-Fi</p>
   <div class="ssid" id="ssid">TIM-55999763</div>
-
-  <button class="primary" id="connect">MOSTRA QR CODE WI-FI</button>
-  <button class="secondary" id="toggle">MOSTRA PASSWORD</button>
-
-  <section id="details" aria-live="polite">
-    <div id="qrcode"></div>
-    <p class="hint">Inquadra questo QR code con la fotocamera del dispositivo da collegare. Se stai visualizzando questa pagina sullo stesso dispositivo, mostra il QR code su un altro schermo oppure usa la password qui sotto.</p>
-    <div id="passwordBox" hidden>
-      <strong>Password Wi-Fi</strong>
-      <div id="password"></div>
-    </div>
-  </section>
-
-  <div class="warning">
-    Nota: chiunque possa aprire questa pagina potrà ottenere i dati di accesso alla rete. Pubblica questa pagina solo se accetti che la password sia condivisa con chiunque trovi o scansioni il tag.
-  </div>
+  <div id="error" class="error" style="display:none"></div>
+  <button id="qrbtn" style="display:none">MOSTRA QR CODE WI-FI</button>
+  <div id="qr"></div>
+  <button id="pwbtn" style="display:none">MOSTRA PASSWORD</button>
+  <div id="password"></div>
+  <p class="hint">Inquadra il QR code con la fotocamera del dispositivo da collegare. Se stai usando questa pagina sullo stesso dispositivo, mostra il QR code su un altro schermo.</p>
+  <div class="warning">La password non è salvata nel repository GitHub: è contenuta nel link scritto sul tag NFC. Chiunque possa scansionare o copiare quel tag/link potrà comunque ottenere le credenziali Wi-Fi.</div>
 </main>
-
-<!-- Libreria usata solo per generare il QR code nel browser. -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-  // MODIFICA QUESTO VALORE PRIMA DI PUBBLICARE IL FILE.
-  const WIFI_SSID = "TIM-55999763";
-  const WIFI_PASSWORD = "INSERISCI_QUI_LA_PASSWORD";
-  // WPA è il formato Wi-Fi QR comunemente usato per reti WPA/WPA2.
-  // Per una rete aperta usare T:nopass; per reti WPA-Personal usare T:WPA.
-  const WIFI_SECURITY = "WPA";
+(() => {
+  const ssid = "TIM-55999763";
+  const errorBox = document.getElementById("error");
+  const qrBox = document.getElementById("qr");
+  const qrButton = document.getElementById("qrbtn");
+  const pwButton = document.getElementById("pwbtn");
+  const pwBox = document.getElementById("password");
 
-  document.getElementById("ssid").textContent = WIFI_SSID;
-  const details = document.getElementById("details");
-  const passwordBox = document.getElementById("passwordBox");
-  document.getElementById("password").textContent = WIFI_PASSWORD;
+  // Il tag NFC apre l'URL con un frammento del tipo:
+  // #WIFI:T:WPA;S:TIM-55999763;P:LA_TUA_PASSWORD;;
+  let payload = "";
+  try { payload = decodeURIComponent(location.hash.slice(1)); } catch(e) {}
+  const fields = {};
+  if (payload.startsWith("WIFI:")) {
+    payload.slice(5).split(";").forEach(part => {
+      const pos = part.indexOf(":");
+      if (pos > 0) fields[part.slice(0,pos)] = part.slice(pos+1);
+    });
+  }
+  const password = fields.P || "";
+  const networkName = fields.S || ssid;
 
-  function wifiEscape(value) {
-    return String(value).replace(/\\/g, "\\\\").replace(/;/g, "\\;")
-      .replace(/,/g, "\\,").replace(/:/g, "\\:").replace(/"/g, '\\"');
+  // Rimuove il segreto dalla barra degli indirizzi e dalla cronologia visibile.
+  if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+
+  if (!password || !networkName) {
+    errorBox.textContent = "Credenziali non trovate. Scansiona il tag NFC configurato con il link Wi-Fi.";
+    errorBox.style.display = "block";
+    return;
   }
-  function showQr() {
-    details.style.display = "block";
-    const target = document.getElementById("qrcode");
-    target.innerHTML = "";
-    if (WIFI_PASSWORD === "INSERISCI_QUI_LA_PASSWORD" || !WIFI_PASSWORD) {
-      target.textContent = "Il proprietario deve ancora inserire la password nel file index.html.";
-      return;
-    }
-    if (typeof QRCode === "undefined") {
-      target.textContent = "QR code non disponibile: controlla la connessione internet e ricarica la pagina.";
-      return;
-    }
-    const payload = `WIFI:T:${WIFI_SECURITY};S:${wifiEscape(WIFI_SSID)};P:${wifiEscape(WIFI_PASSWORD)};;`;
-    new QRCode(target, { text: payload, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
-  }
-  document.getElementById("connect").addEventListener("click", showQr);
-  document.getElementById("toggle").addEventListener("click", () => {
-    details.style.display = "block";
-    passwordBox.hidden = !passwordBox.hidden;
-    document.getElementById("toggle").textContent = passwordBox.hidden ? "MOSTRA PASSWORD" : "NASCONDI PASSWORD";
+
+  document.getElementById("ssid").textContent = networkName;
+  qrButton.style.display = "block";
+  pwButton.style.display = "block";
+  pwButton.addEventListener("click", () => {
+    pwBox.textContent = pwBox.style.display === "block" ? "" : password;
+    pwBox.style.display = pwBox.style.display === "block" ? "none" : "block";
+    pwButton.textContent = pwBox.style.display === "block" ? "NASCONDI PASSWORD" : "MOSTRA PASSWORD";
   });
+  qrButton.addEventListener("click", () => {
+    if (!qrBox.dataset.created) {
+      const wifiString = `WIFI:T:WPA;S:${networkName};P:${password};;`;
+      new QRCode(qrBox, {text:wifiString,width:230,height:230,correctLevel:QRCode.CorrectLevel.M});
+      qrBox.dataset.created = "1";
+    }
+    qrBox.style.display = qrBox.style.display === "block" ? "none" : "block";
+    qrButton.textContent = qrBox.style.display === "block" ? "NASCONDI QR CODE" : "MOSTRA QR CODE WI-FI";
+  });
+})();
 </script>
 </body>
 </html>
